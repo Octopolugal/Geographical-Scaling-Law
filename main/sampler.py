@@ -4,9 +4,10 @@ from sklearn.neighbors import KDTree, BallTree
 from scipy import sparse
 from scipy.spatial.distance import cdist
 
-from surprisal import EmpiricalSurprisal, AnalyticalSurprisal
-
+from spatial_self_information import AnalyticalSurprisal
+import torch
 from tqdm import tqdm
+
 
 def add_random_background(data, locations, n_bg=400):
     n = data.shape[0]
@@ -148,4 +149,3 @@ def ssi_sample(features, locations, sample_rate, k=20, radius=100, n_bg=100, buc
     idx = ssi_downsample(base_infos, sample_rate=sample_rate, inverse=inverse)
 
     return idx
-
