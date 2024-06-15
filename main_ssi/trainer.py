@@ -35,7 +35,7 @@ def make_args_parser():
     parser.add_argument(
         "--save_results",
         type=str,
-        default="T",
+        default="F",
         help="""whether you need to save the lon, lat, rr, acc1, acc3 into a csv file for the final evaluation""",
     )
     parser.add_argument(
@@ -185,7 +185,7 @@ def make_args_parser():
     parser.add_argument("--device", type=str, default="cuda:0")
 
     parser.add_argument("--model_dir", type=str, default="../models/ssi/")
-    parser.add_argument("--num_epochs", type=int, default=20)
+    parser.add_argument("--num_epochs", type=int, default=28)
 
     parser.add_argument(
         "--embed_dim_before_regress", type=int, default=64, help="embedding dim before regress"
@@ -487,7 +487,7 @@ def make_args_parser():
     parser.add_argument(
         "--eval_frequency",
         type=int,
-        default=100,
+        default=4,
         help="The frequency to Eval the location encoder model classification accuracy",
     )
     parser.add_argument(
@@ -1365,7 +1365,7 @@ class Trainer:
 
             self.save_model(unsuper_model=True)
 
-    def   run_super_train(self):
+    def run_super_train(self):
         if self.params["unsuper_loss"] != "none":
             # adjust the learning rate
             # we readjust the lr as the initial lr during supervised training
@@ -1386,6 +1386,7 @@ class Trainer:
         # main train loop
         for epoch in range(self.epoch, self.epoch + self.params["num_epochs"]):
             self.logger.info("\nEpoch\t{}".format(epoch))
+            # classification
             if self.regress_enc_model is None:
                 train(
                     model=self.loc_enc_model,
@@ -1404,10 +1405,11 @@ class Trainer:
                 )
 
                 if epoch % self.params["eval_frequency"] == 0 and epoch != 0 and self.params['dataset'] not in self.params['regress_dataset']:
-                    self.run_eval_spa_enc_only(
-                        eval_flag_str=f"LocEnc (Epoch {epoch})", load_model=False
-                    )
+                    # self.run_eval_spa_enc_only(
+                    #     eval_flag_str=f"LocEnc (Epoch {epoch})", load_model=False
+                    # )
                     self.run_eval_final(eval_flag_str=f"(Epoch {epoch})")
+                    self.logger.info(f"\n############## SSI train_sample_ratio: {self.params['train_sample_ratio']}, Run Time: {self.params['ssi_run_time']} #################.")
                     # if self.params["do_epoch_save"]:
                     #     self.save_model(unsuper_model = False, cur_epoch = epoch)
             else:
