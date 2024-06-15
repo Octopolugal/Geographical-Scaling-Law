@@ -20,7 +20,7 @@ HIDDIM=512
 FREQ=64
 MINR=0.001
 MAXR=1
-EPOCH=8
+EPOCH=29
 ACT=leakyrelu
 
 RATIO=0.1
@@ -35,6 +35,7 @@ do
         do
             python3 train_unsuper.py \
                 --ssi_run_time $RUN \
+                --ssi_loop $loop \
                 --train_sample_method $SAMPLE \
                 --spa_enc_type $ENC \
                 --meta_type $META \

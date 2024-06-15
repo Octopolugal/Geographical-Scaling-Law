@@ -33,6 +33,12 @@ def make_args_parser():
         help="""ssi run time""",
     )
     parser.add_argument(
+        "--ssi_loop",
+        type=int,
+        default="1",
+        help="""ssi run time""",
+    )
+    parser.add_argument(
         "--save_results",
         type=str,
         default="F",
@@ -188,7 +194,10 @@ def make_args_parser():
     parser.add_argument("--num_epochs", type=int, default=28)
 
     parser.add_argument(
-        "--embed_dim_before_regress", type=int, default=64, help="embedding dim before regress"
+        "--embed_dim_before_regress",
+        type=int,
+        default=64,
+        help="embedding dim before regress",
     )  # for regression, the loc encoder returns a params["embed_dim_before_regress"]-dim location embed and a params["embed_dim_before_regress"]-dim image embed
 
     parser.add_argument(
@@ -329,7 +338,7 @@ def make_args_parser():
     parser.add_argument(
         "--train_sample_ratio",
         type=float,
-        default= 0.01, #1.0,
+        default=0.01,  # 1.0,
         help="""The training dataset sample ratio for supervised learning""",
     )
     parser.add_argument(
@@ -354,7 +363,8 @@ def make_args_parser():
         "--ssi_sample_feat_type",
         type=str,
         default="feat",
-        help="""The feature type used in spatial self information sampling, e.g., feat, pred""")
+        help="""The feature type used in spatial self information sampling, e.g., feat, pred""",
+    )
 
     parser.add_argument(
         "--ssi_sample_k",
@@ -540,7 +550,7 @@ def update_params(params):
         params["eval_split"] = "test"
         params["load_cnn_features_train"] = "T"
         params["load_cnn_features"] = "T"
-        params['load_cnn_predictions'] = "F"
+        params["load_cnn_predictions"] = "F"
     # elif params["dataset"] in [
     #     "sustainbench_asset_index",
     #     "sustainbench_under5_mort",
@@ -621,13 +631,16 @@ class Trainer:
 
         self.regress_enc_model = self.create_regress_model()
 
-        if self.params["spa_enc_type"] not in self.spa_enc_baseline_list and self.params['dataset'] not in params["regress_dataset"]:
+        if (
+            self.params["spa_enc_type"] not in self.spa_enc_baseline_list
+            and self.params["dataset"] not in params["regress_dataset"]
+        ):
             self.optimizer = torch.optim.Adam(
                 self.loc_enc_model.parameters(),
                 lr=params["lr"],
                 weight_decay=params["weight_decay"],
             )
-        elif self.params['dataset'] in params["regress_dataset"]:
+        elif self.params["dataset"] in params["regress_dataset"]:
             self.optimizer = torch.optim.Adam(
                 self.regress_enc_model.parameters(),
                 lr=params["lr"],
@@ -637,7 +650,6 @@ class Trainer:
         self.set_up_grid_predictor()
 
         self.epoch = 0
-    
 
     def make_spa_enc_type_list(self):
         self.spa_enc_baseline_list = ut.get_spa_enc_baseline_list()
@@ -647,7 +659,7 @@ class Trainer:
         # op = dt.load_dataset(params, 'val', True, True)
         op = dt.load_dataset(
             params,
-            eval_split=params['eval_split'],
+            eval_split=params["eval_split"],
             train_remove_invalid=True,
             eval_remove_invalid=True,
             load_cnn_predictions=params["load_cnn_predictions"],
@@ -768,7 +780,10 @@ class Trainer:
                 params["model_file_name"] = params[
                     "model_dir"
                 ] + "model_{}_{}_{}_{}.pth.tar".format(
-                    params["dataset"], params["train_sample_ratio"], params["spa_enc_type"], param_args
+                    params["dataset"],
+                    params["train_sample_ratio"],
+                    params["spa_enc_type"],
+                    param_args,
                 )
             else:
                 params["model_file_name"] = params[
@@ -1008,9 +1023,14 @@ class Trainer:
         new_filename = f"{base_filename}_run{params['ssi_run_time']}.npy"
         return new_filename
 
-
     def create_train_sample_data_loader(self, params):
-        print("Resample at scale: ", params["train_sample_ratio"],params["spa_enc_type"],"Using the sammpling method: ",params["train_sample_method"])
+        print(
+            "Resample at scale: ",
+            params["train_sample_ratio"],
+            params["spa_enc_type"],
+            "Using the sammpling method: ",
+            params["train_sample_method"],
+        )
         if (
             params["train_sample_ratio"] < 1.0
             and params["train_sample_ratio"] > 0
@@ -1027,7 +1047,9 @@ class Trainer:
             )
 
             # params["train_sample_idx_file"] = self.get_next_available_filename(train_sample_idx_file[:-4])
-            params["train_sample_idx_file"] = self.get_available_filename(params, train_sample_idx_file[:-4])
+            params["train_sample_idx_file"] = self.get_available_filename(
+                params, train_sample_idx_file[:-4]
+            )
             print("Sample idx file: ", params["train_sample_idx_file"])
             sample_type, sample_seed = params["train_sample_method"].split("-")
             if sample_seed == "fix" and os.path.exists(train_sample_idx_file):
@@ -1077,13 +1099,12 @@ class Trainer:
                 if self.op["train_feats"] is not None
                 else None,
             )
-        elif (params["train_sample_ratio"] < 1.0
+        elif (
+            params["train_sample_ratio"] < 1.0
             and params["train_sample_ratio"] > 0
-            and params["train_sample_method"] == "ssi-sample"):
-            feature_mapping = {
-                "pred": "train_preds",
-                "feat": "train_feats"
-            }
+            and params["train_sample_method"] == "ssi-sample"
+        ):
+            feature_mapping = {"pred": "train_preds", "feat": "train_feats"}
             train_sample_idx_file = dtul.get_ssi_sample_idx_file_path(
                 params=params,
                 dataset=params["dataset"],
@@ -1093,7 +1114,7 @@ class Trainer:
                 sample_method=params["train_sample_method"],
             )
             params["train_sample_idx_file"] = train_sample_idx_file
-            
+
             if os.path.exists(train_sample_idx_file):
                 self.train_sample_idxs = np.load(
                     train_sample_idx_file, allow_pickle=True
@@ -1102,8 +1123,17 @@ class Trainer:
                 feats = self.op[feature_mapping[params["ssi_sample_feat_type"]]]
                 locs = self.op["train_locs"]
                 feats = torch.from_numpy(feats).to(params["device"])
-                locs= torch.from_numpy(locs).to(params["device"])
-                self.train_sample_idxs = ssi_sample(features=feats, locations=locs, sample_rate=params["train_sample_ratio"], k=params["ssi_sample_k"], radius=params["ssi_sample_radius"], n_bg=params["ssi_sample_n_bg"], bucket_size=params["ssi_sample_bucket_size"], inverse=False)
+                locs = torch.from_numpy(locs).to(params["device"])
+                self.train_sample_idxs = ssi_sample(
+                    features=feats,
+                    locations=locs,
+                    sample_rate=params["train_sample_ratio"],
+                    k=params["ssi_sample_k"],
+                    radius=params["ssi_sample_radius"],
+                    n_bg=params["ssi_sample_n_bg"],
+                    bucket_size=params["ssi_sample_bucket_size"],
+                    inverse=False,
+                )
                 self.train_sample_idxs.dump(train_sample_idx_file)
 
             # self.train_sample_idxs_tensor = torch.from_numpy(self.train_sample_idxs).to(params['device'])
@@ -1125,13 +1155,15 @@ class Trainer:
                 if self.op["train_feats"] is not None
                 else None,
             )
-            final_df = pd.DataFrame({
-                "train_classes": self.op["train_classes"][self.train_sample_idxs],
-                "train_locs": self.op["train_locs"][self.train_sample_idxs],
-                "train_dates": self.op["train_dates"][self.train_sample_idxs],
-                "train_users": self.train_users_np[self.train_sample_idxs]
-            })
-            final_df.to_csv('combined_data.csv', index=False)
+            final_df = pd.DataFrame(
+                {
+                    "train_classes": self.op["train_classes"][self.train_sample_idxs],
+                    "train_locs": self.op["train_locs"][self.train_sample_idxs],
+                    "train_dates": self.op["train_dates"][self.train_sample_idxs],
+                    "train_users": self.train_users_np[self.train_sample_idxs],
+                }
+            )
+            final_df.to_csv("combined_data.csv", index=False)
         else:
             (
                 self.train_sample_dataset,
@@ -1241,7 +1273,7 @@ class Trainer:
             print
             return models.MosaiksRegressNet(
                 params=self.params,
-                input_dim = self.params["embed_dim_before_regress"],
+                input_dim=self.params["embed_dim_before_regress"],
                 dropout_p=self.params["mosaiks_net_dropout"],
                 hidden_dim=self.params["mosaiks_hidden_dim"],
                 loc_enc=self.loc_enc_model,
@@ -1275,7 +1307,9 @@ class Trainer:
                     params=self.params,
                     spa_enc_type=self.params["spa_enc_type"],
                     num_inputs=self.params["num_loc_feats"],
-                    num_classes=self.params["embed_dim_before_regress"],  # for regression, the loc encoder returns a params["embed_dim_before_regress"]-dim location embedding
+                    num_classes=self.params[
+                        "embed_dim_before_regress"
+                    ],  # for regression, the loc encoder returns a params["embed_dim_before_regress"]-dim location embedding
                     num_filts=self.params["num_filts"],
                     num_users=None,
                     device=self.params["device"],
@@ -1383,6 +1417,14 @@ class Trainer:
         else:
             train_loader = self.train_loader
 
+        self.logger.info(f"""
+############## SSI Parameters #################
+Train Sample Ratio: {self.params['train_sample_ratio']}
+Run Time: {self.params['ssi_run_time']}
+SSI Loop: {self.params['ssi_loop']}
+###############################################
+""")
+
         # main train loop
         for epoch in range(self.epoch, self.epoch + self.params["num_epochs"]):
             self.logger.info("\nEpoch\t{}".format(epoch))
@@ -1404,12 +1446,15 @@ class Trainer:
                     logger=self.logger,
                 )
 
-                if epoch % self.params["eval_frequency"] == 0 and epoch != 0 and self.params['dataset'] not in self.params['regress_dataset']:
+                if (
+                    epoch % self.params["eval_frequency"] == 0
+                    and epoch != 0
+                    and self.params["dataset"] not in self.params["regress_dataset"]
+                ):
                     # self.run_eval_spa_enc_only(
                     #     eval_flag_str=f"LocEnc (Epoch {epoch})", load_model=False
                     # )
                     self.run_eval_final(eval_flag_str=f"(Epoch {epoch})")
-                    self.logger.info(f"\n############## SSI train_sample_ratio: {self.params['train_sample_ratio']}, Run Time: {self.params['ssi_run_time']} #################.")
                     # if self.params["do_epoch_save"]:
                     #     self.save_model(unsuper_model = False, cur_epoch = epoch)
             else:
@@ -1429,7 +1474,11 @@ class Trainer:
                     logger=self.logger,
                 )
 
-                if epoch % self.params["eval_frequency"] == 0 and epoch != 0 and self.params['dataset'] not in self.params['regress_dataset']:
+                if (
+                    epoch % self.params["eval_frequency"] == 0
+                    and epoch != 0
+                    and self.params["dataset"] not in self.params["regress_dataset"]
+                ):
                     self.run_eval_spa_enc_only(
                         eval_flag_str=f"LocEnc (Epoch {epoch})", load_model=False
                     )
@@ -1638,7 +1687,9 @@ class Trainer:
         since we need to load dataset again which allows invalid sample in val/test
         """
         if self.params["dataset"] not in self.params["regress_dataset"]:
-            spa_enc_type_list = self.check_spa_enc_type_list(self.params, spa_enc_type_list)
+            spa_enc_type_list = self.check_spa_enc_type_list(
+                self.params, spa_enc_type_list
+            )
 
             if self.val_op is None or "tang_et_al" in spa_enc_type_list:
                 # load the dataset for final evaluation if:
@@ -1680,7 +1731,9 @@ class Trainer:
             if "train_freq" in spa_enc_type_list:
                 self.logger.info("\nTrain frequency prior")
                 # weight the eval predictions by the overall frequency of each class at train time
-                cls_id, cls_cnt = np.unique(self.op["train_classes"], return_counts=True)
+                cls_id, cls_cnt = np.unique(
+                    self.op["train_classes"], return_counts=True
+                )
                 train_prior = np.ones(self.params["num_classes"])
                 train_prior[cls_id] += cls_cnt
                 train_prior /= train_prior.sum()
@@ -1720,7 +1773,9 @@ class Trainer:
                 )
 
                 self.logger.info("\nTang et al. prior")
-                self.logger.info("  using model :\t" + os.path.basename(nn_model_path_tang))
+                self.logger.info(
+                    "  using model :\t" + os.path.basename(nn_model_path_tang)
+                )
                 net_params = torch.load(nn_model_path_tang)
                 params = net_params["params"]
 
@@ -1811,7 +1866,9 @@ class Trainer:
                     )
                     val_locs_n = np.deg2rad(op["val_locs"])
                 else:
-                    nn_tree = BallTree(self.op["train_locs"][:, ::-1], metric="euclidean")
+                    nn_tree = BallTree(
+                        self.op["train_locs"][:, ::-1], metric="euclidean"
+                    )
                     val_locs_n = op["val_locs"]
 
             #
@@ -1888,7 +1945,9 @@ class Trainer:
                 kde_params = {}
                 train_classes_kde, train_locs_kde, kde_params["counts"] = (
                     bl.create_kde_grid(
-                        self.op["train_classes"], self.op["train_locs"], self.hyper_params
+                        self.op["train_classes"],
+                        self.op["train_locs"],
+                        self.hyper_params,
                     )
                 )
                 if self.hyper_params["kde_dist_type"] == "haversine":
@@ -1945,17 +2004,17 @@ class Trainer:
                     val_preds_final=val_preds_final, val_pred_no_prior=pred_no_prior
                 )
         else:
-            compute_regression_acc(params=self.params,
-                        model=self.regress_enc_model,
-                        val_locs=self.val_loc_feats,
-                        val_feats=self.val_feats,
-                        val_labels=self.val_labels,
-                        # prior_type="train_freq",
-                        # prior=train_prior,
-                        logger=self.logger,)
+            compute_regression_acc(
+                params=self.params,
+                model=self.regress_enc_model,
+                val_locs=self.val_loc_feats,
+                val_feats=self.val_feats,
+                val_labels=self.val_labels,
+                # prior_type="train_freq",
+                # prior=train_prior,
+                logger=self.logger,
+            )
 
-    
-        
     def run_eval_spa_enc_final(self, op, eval_flag_str=""):
         spa_enc_type = self.params["spa_enc_type"]
         spa_enc_algs = set(ut.get_spa_enc_list() + ["wrap"])
@@ -2041,7 +2100,7 @@ class Trainer:
         )
         assert spa_enc_type in spa_enc_algs
 
-        if self.params['dataset'] not in self.params['regress_dataset']:
+        if self.params["dataset"] not in self.params["regress_dataset"]:
             if load_model:
                 self.load_model()
 
