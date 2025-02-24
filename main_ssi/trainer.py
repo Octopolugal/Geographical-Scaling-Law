@@ -23,6 +23,8 @@ from sampler import *
 
 import pandas as pd
 
+torch.manual_seed(42)
+torch.cuda.manual_seed_all(42)
 
 def make_args_parser():
     parser = ArgumentParser()
@@ -47,7 +49,7 @@ def make_args_parser():
     parser.add_argument(
         "--unsuper_dataset",
         type=str,
-        default="inat_2018",
+        default="inat_2017",
         help="""this is the dataset used for unsupervised learning training,
                 e.g., inat_2018, inat_2017, birdsnap, nabirds, yfcc, fmow""",
     )
@@ -62,7 +64,7 @@ def make_args_parser():
     parser.add_argument(
         "--dataset",
         type=str,
-        default="fmow",  # ,"",birdsnap
+        default="nabirds",  # ,"",birdsnap
         choices=[
             "inat_2021",
             "inat_2018",
@@ -82,7 +84,7 @@ def make_args_parser():
             "mosaiks_forest_cover",
             "mosaiks_nightlights",
         ],
-        help="""Dataset to use. Options are: inat_2021, inat_2018, inat_2017, birdsnap, nabirds, yfcc, fmow, sustainbench_asset_index, sustainbench_under5_mort, sustainbench_water_index, sustainbench_women_bmi,          sustainbench_women_edu, sustainbench_sanitation_index,mosaiks_population, mosaiks_elevation, mosaiks_forest_cover, mosaiks_nightlights""",
+        help="""Dataset to use. Options are: inat_2021, inat_2018, inat_2017, birdsnap, nabirds, yfcc, fmow, sustainbench_asset_index, sustainbench_under5_mort, sustainbench_water_index, sustainbench_women_bmi, sustainbench_women_edu, sustainbench_sanitation_index,mosaiks_population, mosaiks_elevation, mosaiks_forest_cover, mosaiks_nightlights""",
     )
 
     parser.add_argument(
@@ -211,8 +213,8 @@ def make_args_parser():
     parser.add_argument(
         "--spa_enc_type",
         type=str,
-        default="wrap",
-        help="""this is the type of location encoder, e.g., Space2Vec-grid, Space2Vec-theory, xyz, NeRF,Sphere2Vec-sphereC, Sphere2Vec-sphereC+, Sphere2Vec-sphereM, Sphere2Vec-sphereM+, Sphere2Vec-dfs, rbf, rff, wrap, wrap_ffn, tile""",
+        default="xyz",
+        help="""this is the type of location encoder, e.g., Space2Vec-grid, Space2Vec-theory, xyz, NeRF,Sphere2Vec-sphereC, Sphere2Vec-sphereC+, Sphere2Vec-sphereM, Sphere2Vec-sphereM+, Sphere2Vec-dfs, rbf, rff, wrap, wrap_ffn, tile_ffn""",
     )
     parser.add_argument(
         "--frequency_num",
@@ -881,9 +883,16 @@ class Trainer:
             # labels: torch.tensor, shape [num_samples, ]
             labels = torch.from_numpy(classes)  # .to(params['device'])
             # loc_feats: torch.tensor, shape [num_samples, 2] or [num_samples, 3]
+            # qc: Generate random locations
+            num_samples = labels.shape[0]  
+            random_locs = np.column_stack([
+                np.random.uniform(-180, 180, num_samples),  
+                np.random.uniform(-90, 90, num_samples)     
+            ])
             loc_feats = ut.generate_model_input_feats(
                 spa_enc_type=params["spa_enc_type"],
-                locs=locs,
+                #locs=locs,
+                locs=random_locs,
                 dates=dates,
                 params=params,
                 device=params["device"],
