@@ -4,12 +4,8 @@ DIR=../models/ssi/inat17/space2vec_theory
 
 ENC=Space2Vec-theory
 
-# DATA=birdsnap
-# DATA=nabirds
 DATA=inat_2017
-# DATA=nabirds
 META=ebird_meta
-# META=orig_meta
 EVALDATA=val
 
 DEVICE=cuda:1
