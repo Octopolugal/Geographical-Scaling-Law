@@ -24,7 +24,7 @@ SAMPLE=random-fix
 
 loop=1
 
-for RATIO in 0.2 0.3 0.4
+for RATIO in $(seq 0.1 0.1 1.0)
 do
     for RUN in {1..10}
     do
