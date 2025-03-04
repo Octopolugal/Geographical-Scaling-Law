@@ -9,7 +9,7 @@ def main():
         "--log_folder",
         type=str,
         help="The path to the folder containing the log files.",
-        default="../models/ssi/inat17/C",
+        default="../models/ssi/inat17",
     )
     args = parser.parse_args()
 
@@ -59,8 +59,7 @@ def main():
             else:
                 print("No parameters found")
 
-        #subfolder_name = re.search(r"^(.*?)model", log_file_name).group(1)
-        subfolder_name = 'sphere2vec_sphereC'
+        subfolder_name = re.search(r"^(.*?)model", log_file_name).group(1)
         
         subfolder_path = os.path.join("eva_result", subfolder_name)
 
@@ -86,9 +85,8 @@ def main():
             writer.writeheader()
             for run_time in range(1, 11):
                 row = {"Run Time / SSI Loop": run_time}
-                #for ssi_loop in range(1,11):
-                ssi_loop = 1
-                row[str(ssi_loop)] = max_top1_acc.get(run_time, {}).get(ssi_loop, "")
+                for ssi_loop in range(1,11):
+                    row[str(ssi_loop)] = max_top1_acc.get(run_time, {}).get(ssi_loop, "")
                 writer.writerow(row)
 
         print(f"Results saved to {csv_file_name}")
