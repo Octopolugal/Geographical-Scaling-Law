@@ -29,6 +29,12 @@ torch.cuda.manual_seed_all(42)
 def make_args_parser():
     parser = ArgumentParser()
     parser.add_argument(
+        "--ssi_no_prior",
+        type=str,
+        default="F",
+        help="""ssi no prior""",
+    )
+    parser.add_argument(
         "--ssi_run_time",
         type=int,
         default="1",
@@ -882,21 +888,31 @@ class Trainer:
             # data loaders
             # labels: torch.tensor, shape [num_samples, ]
             labels = torch.from_numpy(classes)  # .to(params['device'])
-            # loc_feats: torch.tensor, shape [num_samples, 2] or [num_samples, 3]
-            # qc: Generate random locations
-            num_samples = labels.shape[0]  
-            random_locs = np.column_stack([
-                np.random.uniform(-180, 180, num_samples),  
-                np.random.uniform(-90, 90, num_samples)     
-            ])
-            loc_feats = ut.generate_model_input_feats(
-                spa_enc_type=params["spa_enc_type"],
-                #locs=locs,
-                locs=random_locs,
-                dates=dates,
-                params=params,
-                device=params["device"],
-            ).cpu()
+            if params["ssi_no_prior"] == "F":
+                # loc_feats: torch.tensor, shape [num_samples, 2] or [num_samples, 3]
+                loc_feats = ut.generate_model_input_feats(
+                    spa_enc_type=params["spa_enc_type"],
+                    locs=locs,
+                    dates=dates,
+                    params=params,
+                    device=params["device"],
+                ).cpu()
+            elif params["ssi_no_prior"] == "T":
+            # ssi_no_prior: Generate random locations
+                num_samples = labels.shape[0]  
+                random_locs = np.column_stack([
+                    np.random.uniform(-180, 180, num_samples),  
+                    np.random.uniform(-90, 90, num_samples)     
+                ])
+                loc_feats = ut.generate_model_input_feats(
+                    spa_enc_type=params["spa_enc_type"],
+                    locs=random_locs,
+                    dates=dates,
+                    params=params,
+                    device=params["device"],
+                ).cpu()
+            else:
+                raise ValueError(f"ssi_no_prior should be either T or F, but got {params['ssi_no_prior']}")
 
             users_tensor = torch.from_numpy(users)  # .to(params['device'])
 
